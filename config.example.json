@@ -1,10 +1,10 @@
 {
-  "gemini_api_key": "YOUR_GEMINI_API_KEY",
-  "gemini_base_url": "https://generativelanguage.googleapis.com",
+  "aliyun_api_key": "YOUR_ALIYUN_API_KEY",
+  "aliyun_base_url": "https://dashscope.aliyuncs.com",
   "unsplash_access_key": "YOUR_UNSPLASH_ACCESS_KEY",
   "pexels_api_key": "YOUR_PEXELS_API_KEY",
   "pixabay_api_key": "YOUR_PIXABAY_API_KEY",
-  "default_model": "gemini-pro",
+  "default_model": "qwen-plus",
   "default_prompt": "",
   "max_concurrent_tasks": 3,
   "pandoc_path": "",

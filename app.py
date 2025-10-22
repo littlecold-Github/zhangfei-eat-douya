@@ -476,13 +476,13 @@ def handle_config():
         config = load_config()
         # 返回配置状态，不返回实际的密钥
         return jsonify({
-            'gemini_api_key_set': bool(config.get('gemini_api_key')),
+            'aliyun_api_key_set': bool(config.get('aliyun_api_key')),
             'unsplash_access_key_set': bool(config.get('unsplash_access_key')),
             'pexels_api_key_set': bool(config.get('pexels_api_key')),
             'pixabay_api_key_set': bool(config.get('pixabay_api_key')),
-            'gemini_base_url': config.get('gemini_base_url', 'https://generativelanguage.googleapis.com'),
+            'aliyun_base_url': config.get('aliyun_base_url', 'https://dashscope.aliyuncs.com'),
             'pandoc_path': config.get('pandoc_path', ''),
-            'default_model': config.get('default_model', 'gemini-pro'),
+            'default_model': config.get('default_model', 'qwen-plus'),
             'default_prompt': config.get('default_prompt', ''),
             'max_concurrent_tasks': config.get('max_concurrent_tasks', 3),
             'image_source_priority': config.get('image_source_priority', ['comfyui', 'user_uploaded', 'pexels', 'unsplash', 'pixabay', 'local']),
@@ -508,9 +508,9 @@ def handle_config():
 
         # 合并配置：如果新配置中没有提供密钥，使用旧的
         final_config = {
-            'gemini_base_url': new_config.get('gemini_base_url', 'https://generativelanguage.googleapis.com'),
+            'aliyun_base_url': new_config.get('aliyun_base_url', 'https://dashscope.aliyuncs.com'),
             'pandoc_path': new_config.get('pandoc_path', ''),
-            'default_model': new_config.get('default_model', 'gemini-pro'),
+            'default_model': new_config.get('default_model', 'qwen-plus'),
             'default_prompt': new_config.get('default_prompt', ''),
             'max_concurrent_tasks': int(new_config.get('max_concurrent_tasks', old_config.get('max_concurrent_tasks', 3))),
             'image_source_priority': new_config.get('image_source_priority', old_config.get('image_source_priority', ['comfyui', 'user_uploaded', 'pexels', 'unsplash', 'pixabay', 'local'])),
@@ -526,10 +526,10 @@ def handle_config():
         }
 
         # 处理 API 密钥
-        if new_config.get('gemini_api_key'):
-            final_config['gemini_api_key'] = new_config['gemini_api_key']
-        elif old_config.get('gemini_api_key'):
-            final_config['gemini_api_key'] = old_config['gemini_api_key']
+        if new_config.get('aliyun_api_key'):
+            final_config['aliyun_api_key'] = new_config['aliyun_api_key']
+        elif old_config.get('aliyun_api_key'):
+            final_config['aliyun_api_key'] = old_config['aliyun_api_key']
 
         if new_config.get('unsplash_access_key'):
             final_config['unsplash_access_key'] = new_config['unsplash_access_key']
@@ -569,40 +569,31 @@ def handle_config():
         return jsonify({'success': True, 'message': '配置保存成功'})
 
 @app.route('/api/models')
-def get_models():
-    """获取可用的 Gemini 模型列表"""
+def get_qwen_models():
+    """获取可用的阿里云 Qwen 模型列表"""
     config = load_config()
-    api_key = config.get('gemini_api_key', '')
-    base_url = config.get('gemini_base_url', 'https://generativelanguage.googleapis.com')
+    api_key = config.get('aliyun_api_key', '')
+    base_url = config.get('aliyun_base_url', 'https://dashscope.aliyuncs.com')
 
     if not api_key:
-        return jsonify({'error': '请先配置 Gemini API Key'}), 400
+        return jsonify({'error': '请先配置阿里云 API Key'}), 400
 
     try:
-        # 使用 HTTP 请求获取模型列表
-        url = f'{base_url}/v1beta/models?key={api_key}'
-        response = requests.get(url)
-        response.raise_for_status()
-
-        data = response.json()
-        model_list = []
-        for model in data.get('models', []):
-            if 'generateContent' in model.get('supportedGenerationMethods', []):
-                model_list.append({
-                    'name': model.get('name', '').replace('models/', ''),
-                    'display_name': model.get('displayName', model.get('name', ''))
-                })
+        # 阿里云 Qwen 不提供动态模型列表API，返回预定义的模型列表
+        model_list = [
+            {'name': 'qwen-plus-2025-09-11', 'display_name': 'Qwen-Plus-2025-09-11'}
+        ]
         return jsonify({'models': model_list})
     except Exception as e:
         return jsonify({'error': f'获取模型列表失败: {str(e)}'}), 500
 
 @app.route('/api/test-model', methods=['POST'])
-def test_model():
-    """测试 Gemini 模型"""
+def test_qwen_model():
+    """测试阿里云 Qwen 模型"""
     data = request.json
     model_name = data.get('model_name', '')
     api_key = data.get('api_key', '')
-    base_url = data.get('base_url', 'https://generativelanguage.googleapis.com')
+    base_url = data.get('base_url', 'https://dashscope.aliyuncs.com')
 
     if not model_name:
         return jsonify({'success': False, 'error': '请提供模型名称'}), 400
@@ -610,20 +601,30 @@ def test_model():
     # 如果没有提供API Key，尝试从配置加载
     if not api_key:
         config = load_config()
-        api_key = config.get('gemini_api_key', '')
+        api_key = config.get('aliyun_api_key', '')
         if not api_key:
-            return jsonify({'success': False, 'error': '请先配置 Gemini API Key'}), 400
+            return jsonify({'success': False, 'error': '请先配置阿里云 API Key'}), 400
 
     try:
         # 使用简单的测试提示词
         test_prompt = "请用一句话介绍你自己。"
 
-        url = f'{base_url}/v1beta/models/{model_name}:generateContent?key={api_key}'
-        headers = {'Content-Type': 'application/json'}
+        url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+            'X-DashScope-SSE': 'disable'
+        }
         payload = {
-            'contents': [{
-                'parts': [{'text': test_prompt}]
-            }]
+            'model': model_name,
+            'input': {
+                'messages': [
+                    {'role': 'user', 'content': test_prompt}
+                ]
+            },
+            'parameters': {
+                'result_format': 'text'
+            }
         }
 
         response = requests.post(url, headers=headers, json=payload, timeout=30)
@@ -639,8 +640,8 @@ def test_model():
 
         result = response.json()
 
-        if 'candidates' in result and len(result['candidates']) > 0:
-            reply = result['candidates'][0]['content']['parts'][0]['text']
+        if 'output' in result and 'text' in result['output']:
+            reply = result['output']['text']
             return jsonify({
                 'success': True,
                 'message': '模型测试成功',
@@ -808,10 +809,10 @@ def _execute_single_article_generation(topic, config, user_uploaded_images=None)
         config: 配置对象
         user_uploaded_images: 用户上传的图片列表(数组格式),每项包含 {type, path, order}
     """
-    gemini_api_key = config.get('gemini_api_key', '')
-    gemini_base_url = config.get('gemini_base_url', 'https://generativelanguage.googleapis.com')
+    aliyun_api_key = config.get('aliyun_api_key', '')
+    aliyun_base_url = config.get('aliyun_base_url', 'https://dashscope.aliyuncs.com')
     pandoc_path = config.get('pandoc_path', '')
-    model_name = config.get('default_model') or 'gemini-pro'
+    model_name = config.get('default_model') or 'qwen-plus'
     custom_prompt = config.get('default_prompt', '')
     enable_image = config.get('enable_image', True)
 
@@ -822,8 +823,8 @@ def _execute_single_article_generation(topic, config, user_uploaded_images=None)
     if user_uploaded_images and not isinstance(user_uploaded_images, list):
         user_uploaded_images = [user_uploaded_images]
 
-    # 1. 使用 Gemini 生成文章
-    article = generate_article_with_gemini(topic, gemini_api_key, gemini_base_url, model_name, custom_prompt)
+    # 1. 使用阿里云 Qwen 生成文章
+    article = generate_article_with_qwen(topic, aliyun_api_key, aliyun_base_url, model_name, custom_prompt)
     article_title = extract_article_title(article)
 
     # 2. 提取段落结构
@@ -862,7 +863,7 @@ def _execute_single_article_generation(topic, config, user_uploaded_images=None)
         if need_generate_count > 0:
             try:
                 # 生成视觉蓝图(仅一次)
-                visual_blueprint = generate_visual_blueprint(topic, article, gemini_api_key, gemini_base_url, model_name)
+                visual_blueprint = generate_visual_blueprint_qwen(topic, article, aliyun_api_key, aliyun_base_url, model_name)
                 visual_prompts = build_visual_prompts(visual_blueprint)
                 image_keyword = derive_keyword_from_blueprint(visual_blueprint)
             except Exception as e:
@@ -1136,8 +1137,8 @@ def generate_article():
         return jsonify({'error': '请提供至少一个主题'}), 400
 
     config = load_config()
-    if not config.get('gemini_api_key'):
-        return jsonify({'error': '请先配置 Gemini API Key'}), 400
+    if not config.get('aliyun_api_key'):
+        return jsonify({'error': '请先配置阿里云 API Key'}), 400
     if not config.get('pandoc_path'):
         return jsonify({'error': '请先在配置页面设置 Pandoc 可执行文件路径！'}), 400
 
@@ -1157,8 +1158,8 @@ def generate_article():
 
     return jsonify({'success': True, 'task_id': task_id})
 
-def generate_article_with_gemini(topic, api_key, base_url, model_name, custom_prompt=''):
-    """使用 Gemini API 生成文章"""
+def generate_article_with_qwen(topic, api_key, base_url, model_name, custom_prompt=''):
+    """使用阿里云 Qwen API 生成文章"""
     # 使用自定义 prompt 或默认 prompt
     if custom_prompt:
         prompt = custom_prompt.replace('{topic}', topic)
@@ -1178,21 +1179,31 @@ def generate_article_with_gemini(topic, api_key, base_url, model_name, custom_pr
 
 请直接开始写文章，不需要额外的说明。"""
 
-    # 使用 HTTP 请求调用 Gemini API
-    url = f'{base_url}/v1beta/models/{model_name}:generateContent?key={api_key}'
-    headers = {'Content-Type': 'application/json'}
+    # 使用 HTTP 请求调用阿里云 Qwen API
+    url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json',
+        'X-DashScope-SSE': 'disable'
+    }
     data = {
-        'contents': [{
-            'parts': [{'text': prompt}]
-        }]
+        'model': model_name,
+        'input': {
+            'messages': [
+                {'role': 'user', 'content': prompt}
+            ]
+        },
+        'parameters': {
+            'result_format': 'text'
+        }
     }
 
     response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
 
     result = response.json()
-    if 'candidates' in result and len(result['candidates']) > 0:
-        return result['candidates'][0]['content']['parts'][0]['text']
+    if 'output' in result and 'text' in result['output']:
+        return result['output']['text']
     else:
         raise Exception('无法从 API 响应中提取文章内容')
 
@@ -1616,8 +1627,8 @@ def _parse_json_response(text):
                 pass
     raise ValueError('无法解析模型返回的 JSON')
 
-def generate_visual_blueprint(topic, article, api_key, base_url, model_name):
-    """调用 LLM 生成结构化的视觉描述"""
+def generate_visual_blueprint_qwen(topic, article, api_key, base_url, model_name):
+    """调用阿里云 Qwen 生成结构化的视觉描述"""
     if not api_key:
         return None
 
@@ -1646,22 +1657,32 @@ def generate_visual_blueprint(topic, article, api_key, base_url, model_name):
 4. 只输出 JSON，禁止添加额外解释或 Markdown。
 """
 
-    url = f'{base_url}/v1beta/models/{model_name}:generateContent?key={api_key}'
-    headers = {'Content-Type': 'application/json'}
+    url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json',
+        'X-DashScope-SSE': 'disable'
+    }
     data = {
-        'contents': [{
-            'parts': [{'text': prompt}]
-        }]
+        'model': model_name,
+        'input': {
+            'messages': [
+                {'role': 'user', 'content': prompt}
+            ]
+        },
+        'parameters': {
+            'result_format': 'text'
+        }
     }
 
     response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
 
     result = response.json()
-    if 'candidates' not in result or not result['candidates']:
-        raise Exception('视觉描述生成失败：没有候选内容')
+    if 'output' not in result or 'text' not in result['output']:
+        raise Exception('视觉描述生成失败：没有输出内容')
 
-    raw_text = result['candidates'][0]['content']['parts'][0]['text']
+    raw_text = result['output']['text']
 
     try:
         blueprint = _parse_json_response(raw_text)
@@ -1868,15 +1889,15 @@ def compute_image_slots(paragraphs, target_count):
         return [min(int(i * step), para_count - 2) for i in range(target_count)]
 
 def summarize_paragraph_for_image(paragraph_text, topic, config):
-    """为段落生成图片摘要（英文视觉描述）"""
+    """为段落生成图片摘要（中文视觉描述）"""
     summary_model = config.get('comfyui_summary_model', '__default__')
 
     # 如果选择默认模型，使用主写作模型
     if summary_model == '__default__':
-        summary_model = config.get('default_model', 'gemini-pro')
+        summary_model = config.get('default_model', 'qwen-plus')
 
-    api_key = config.get('gemini_api_key', '')
-    base_url = config.get('gemini_base_url', 'https://generativelanguage.googleapis.com')
+    api_key = config.get('aliyun_api_key', '')
+    base_url = config.get('aliyun_base_url', 'https://dashscope.aliyuncs.com')
 
     if not api_key:
         return f"visual representation of {topic}"
@@ -1899,20 +1920,30 @@ def summarize_paragraph_for_image(paragraph_text, topic, config):
 视觉描述："""
 
     try:
-        url = f'{base_url}/v1beta/models/{summary_model}:generateContent?key={api_key}'
-        headers = {'Content-Type': 'application/json'}
+        url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+            'X-DashScope-SSE': 'disable'
+        }
         data = {
-            'contents': [{
-                'parts': [{'text': prompt}]
-            }]
+            'model': summary_model,
+            'input': {
+                'messages': [
+                    {'role': 'user', 'content': prompt}
+                ]
+            },
+            'parameters': {
+                'result_format': 'text'
+            }
         }
 
         response = requests.post(url, headers=headers, json=data, timeout=30)
         response.raise_for_status()
 
         result = response.json()
-        if 'candidates' in result and len(result['candidates']) > 0:
-            summary = result['candidates'][0]['content']['parts'][0]['text']
+        if 'output' in result and 'text' in result['output']:
+            summary = result['output']['text']
             summary = summary.strip().strip('"').strip("'")
             print(f"段落摘要生成成功: {summary}")
             return summary

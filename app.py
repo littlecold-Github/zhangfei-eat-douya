@@ -1181,6 +1181,7 @@ def generate_article_with_qwen(topic, api_key, base_url, model_name, custom_prom
 
     # 使用 HTTP 请求调用阿里云 Qwen API
     url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+    search = True;
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json',
@@ -1194,7 +1195,12 @@ def generate_article_with_qwen(topic, api_key, base_url, model_name, custom_prom
             ]
         },
         'parameters': {
-            'result_format': 'text'
+            'result_format': 'text',
+            # 开启联网检索
+            'enable_search': search,
+            'search_options': {
+                "forced_search": search
+            }
         }
     }
 

@@ -44,11 +44,11 @@ async function loadConfig() {
 
 // 更新配置界面
 function updateConfigUI() {
-    if (config.gemini_api_key_set) {
-        document.getElementById('geminiApiKey').placeholder = '已设置 API Key（如需更换请重新输入）';
+    if (config.aliyun_api_key_set) {
+        document.getElementById('aliyunApiKey').placeholder = '已设置 API Key（如需更换请重新输入）';
     }
-    if (config.gemini_base_url) {
-        document.getElementById('geminiBaseUrl').value = config.gemini_base_url;
+    if (config.aliyun_base_url) {
+        document.getElementById('aliyunBaseUrl').value = config.aliyun_base_url;
     }
     if (config.unsplash_access_key_set) {
         document.getElementById('unsplashKey').placeholder = '已设置 Access Key（如需更换请重新输入）';
@@ -60,19 +60,19 @@ function updateConfigUI() {
 
 // 保存配置
 saveConfigBtn.addEventListener('click', async () => {
-    const geminiApiKey = document.getElementById('geminiApiKey').value;
-    const geminiBaseUrl = document.getElementById('geminiBaseUrl').value;
+    const aliyunApiKey = document.getElementById('aliyunApiKey').value;
+    const aliyunBaseUrl = document.getElementById('aliyunBaseUrl').value;
     const unsplashKey = document.getElementById('unsplashKey').value;
     const defaultModel = document.getElementById('modelSelect').value;
 
     const newConfig = {
-        gemini_base_url: geminiBaseUrl || 'https://generativelanguage.googleapis.com',
+        aliyun_base_url: aliyunBaseUrl || 'https://dashscope.aliyuncs.com',
         default_model: defaultModel
     };
 
     // 只在用户输入了新值时添加到请求中
-    if (geminiApiKey) {
-        newConfig.gemini_api_key = geminiApiKey;
+    if (aliyunApiKey) {
+        newConfig.aliyun_api_key = aliyunApiKey;
     }
 
     if (unsplashKey) {
@@ -93,7 +93,7 @@ saveConfigBtn.addEventListener('click', async () => {
             // 重新加载配置
             await loadConfig();
             // 清空输入框
-            document.getElementById('geminiApiKey').value = '';
+            document.getElementById('aliyunApiKey').value = '';
             document.getElementById('unsplashKey').value = '';
         } else {
             alert('配置保存失败！');

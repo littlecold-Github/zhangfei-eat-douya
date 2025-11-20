@@ -221,6 +221,58 @@ function getAllTopics() {
 // 添加标题按钮事件
 addTopicBtn.addEventListener('click', addTopicInput);
 
+// 自动选择话题按钮事件
+const autoSelectTopicsBtn = document.getElementById('autoSelectTopicsBtn');
+
+autoSelectTopicsBtn.addEventListener('click', async () => {
+    autoSelectTopicsBtn.disabled = true;
+    autoSelectTopicsBtn.textContent = '加载中...';
+
+    try {
+        const response = await fetch('/api/auto-select-topics', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ count: 5 }) // 获取5个热点话题
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            if (data.success && data.topics && data.topics.length > 0) {
+                // 清空现有主题
+                topicsContainer.innerHTML = '';
+                topicCount = 0;
+
+                // 添加自动选择的话题
+                data.topics.forEach(topicData => {
+                    addTopicInput();
+                    const inputs = document.querySelectorAll('.topic-input');
+                    if (inputs.length > 0) {
+                        const input = inputs[inputs.length - 1];
+                        // 优先使用topic字段，其次是text或标题
+                        input.value = topicData.topic || topicData.title || topicData.text || topicData;
+                    }
+                });
+
+                // 保存页面状态
+                savePageState();
+                alert(`已自动选择 ${data.topics.length} 个热点话题！`);
+            } else {
+                alert('未能获取到热点话题，请稍后重试。');
+            }
+        } else {
+            const errorData = await response.json();
+            alert(`自动选题失败: ${errorData.error || '未知错误'}`);
+        }
+    } catch (error) {
+        console.error('自动选题失败:', error);
+        alert('自动选题过程中发生错误，请稍后重试。');
+    } finally {
+        autoSelectTopicsBtn.disabled = false;
+        autoSelectTopicsBtn.textContent = '/auto-智能推荐热点话题';
+    }
+});
+
 // 清空输入
 clearBtn.addEventListener('click', () => {
     topicsContainer.innerHTML = '';

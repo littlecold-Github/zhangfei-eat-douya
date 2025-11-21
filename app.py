@@ -2416,7 +2416,7 @@ def generate_image_with_comfyui(topic, prompts, blueprint, config, settings_over
     finally:
         semaphore.release()
 
-def find_available_port(start_port=5000, max_attempts=10):
+def find_available_port(start_port=5050, max_attempts=10):
     """查找可用端口，从start_port开始尝试"""
     import socket
     for port in range(start_port, start_port + max_attempts):
@@ -2437,19 +2437,19 @@ if __name__ == '__main__':
     import os
     if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
         # 这是主进程，查找可用端口
-        port = find_available_port(5000)
+        port = find_available_port(5050)
         if port is None:
             print("错误: 无法找到可用端口 (5000-5009 都被占用)")
             exit(1)
 
-        if port != 5000:
-            print(f"提示: 端口 5000 被占用，使用端口 {port} 启动服务")
+        if port != 5050:
+            print(f"提示: 端口 5050 被占用，使用端口 {port} 启动服务")
 
         print(f"应用启动在 http://localhost:{port}")
         # 将端口保存到环境变量，供重载器进程使用
         os.environ['APP_PORT'] = str(port)
     else:
         # 这是重载器进程，使用已找到的端口
-        port = int(os.environ.get('APP_PORT', 5000))
+        port = int(os.environ.get('APP_PORT', 5050))
 
     app.run(debug=True, host='0.0.0.0', port=port)

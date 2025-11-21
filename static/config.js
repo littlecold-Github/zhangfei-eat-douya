@@ -1,6 +1,6 @@
 // DOM 元素
-const geminiApiKey = document.getElementById('geminiApiKey');
-const geminiBaseUrl = document.getElementById('geminiBaseUrl');
+const aliyunApiKey = document.getElementById('aliyunApiKey');
+const aliyunBaseUrl = document.getElementById('aliyunBaseUrl');
 const unsplashKey = document.getElementById('unsplashKey');
 const testUnsplashBtn = document.getElementById('testUnsplash');
 const unsplashTestResult = document.getElementById('unsplashTestResult');
@@ -76,11 +76,11 @@ async function loadConfig() {
             const config = await response.json();
 
             // 更新界面
-            if (config.gemini_api_key_set) {
-                geminiApiKey.placeholder = '已设置 API Key（如需更换请重新输入）';
+            if (config.aliyun_api_key_set) {
+                aliyunApiKey.placeholder = '已设置 API Key（如需更换请重新输入）';
             }
-            if (config.gemini_base_url) {
-                geminiBaseUrl.value = config.gemini_base_url;
+            if (config.aliyun_base_url) {
+                aliyunBaseUrl.value = config.aliyun_base_url;
             }
             if (config.unsplash_access_key_set) {
                 unsplashKey.placeholder = '已设置 Access Key（如需更换请重新输入）';
@@ -174,7 +174,7 @@ async function loadModels() {
             });
         } else {
             // 加载失败，提供一个默认选项
-            defaultModel.innerHTML = '<option value="gemini-pro">gemini-pro (加载列表失败)</option>';
+            defaultModel.innerHTML = '<option value="qwen-plus">qwen-plus (加载列表失败)</option>';
         }
     } catch (error) {
         // 如果加载失败，保留默认选项
@@ -246,7 +246,7 @@ function showStatus(message, isSuccess) {
 // 保存配置
 saveConfigBtn.addEventListener('click', async () => {
     const newConfig = {
-        gemini_base_url: geminiBaseUrl.value || 'https://generativelanguage.googleapis.com',
+        aliyun_base_url: aliyunBaseUrl.value || 'https://dashscope.aliyuncs.com',
         pandoc_path: pandocPath.value,
         output_directory: outputDirectory.value || 'output',
         default_model: defaultModel.value,
@@ -261,8 +261,8 @@ saveConfigBtn.addEventListener('click', async () => {
     };
 
     // 只在用户输入了新值时添加到请求中
-    if (geminiApiKey.value) {
-        newConfig.gemini_api_key = geminiApiKey.value;
+    if (aliyunApiKey.value) {
+        newConfig.aliyun_api_key = aliyunApiKey.value;
     }
 
     if (unsplashKey.value) {
@@ -304,7 +304,7 @@ saveConfigBtn.addEventListener('click', async () => {
             // 重新加载配置
             await loadConfig();
             // 清空输入框
-            geminiApiKey.value = '';
+            aliyunApiKey.value = '';
             unsplashKey.value = '';
             if (pexelsKey) pexelsKey.value = '';
             if (pixabayKey) pixabayKey.value = '';
@@ -369,14 +369,14 @@ testUnsplashBtn.addEventListener('click', async () => {
 // 重置配置
 resetConfigBtn.addEventListener('click', () => {
     if (confirm('确定要重置为默认配置吗？')) {
-        geminiApiKey.value = '';
-        geminiBaseUrl.value = 'https://generativelanguage.googleapis.com';
+        aliyunApiKey.value = '';
+        aliyunBaseUrl.value = 'https://dashscope.aliyuncs.com';
         unsplashKey.value = '';
         pexelsKey.value = '';
         pixabayKey.value = '';
         pandocPath.value = '';
         outputDirectory.value = 'output';
-        defaultModel.value = 'gemini-pro';
+        defaultModel.value = 'qwen-plus';
         defaultPrompt.value = '';
         maxConcurrentTasks.value = 3;
         applyComfyuiSettings(comfyuiDefaults);
@@ -491,8 +491,8 @@ if (testPixabayBtn) {
 if (testDefaultModelBtn) {
     testDefaultModelBtn.addEventListener('click', async () => {
         const modelName = defaultModel.value;
-        const apiKey = geminiApiKey.value || ''; // 如果输入了新的就用新的，否则后端会用已保存的
-        const baseUrl = geminiBaseUrl.value || 'https://generativelanguage.googleapis.com';
+        const apiKey = aliyunApiKey.value || ''; // 如果输入了新的就用新的，否则后端会用已保存的
+        const baseUrl = aliyunBaseUrl.value || 'https://dashscope.aliyuncs.com';
 
         if (!modelName) {
             defaultModelTestResult.textContent = '请先选择模型';
@@ -549,8 +549,8 @@ if (testSummaryModelBtn) {
             return;
         }
 
-        const apiKey = geminiApiKey.value || '';
-        const baseUrl = geminiBaseUrl.value || 'https://generativelanguage.googleapis.com';
+        const apiKey = aliyunApiKey.value || '';
+        const baseUrl = aliyunBaseUrl.value || 'https://dashscope.aliyuncs.com';
 
         testSummaryModelBtn.disabled = true;
         testSummaryModelBtn.textContent = '测试中...';

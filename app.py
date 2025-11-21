@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from flask import Flask, render_template, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -81,6 +82,9 @@ VISUAL_TEMPLATE_PRESETS = {
         'negative': 'lowres, messy composition, noisy texture, random clutter, illegible text, watermark'
     }
 }
+
+# 通义千问API配置
+DASHSCOPE_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
 IMAGE_STYLE_TEMPLATES = {
     'custom': {
         'label': '自定义风格',
@@ -361,6 +365,162 @@ def test_comfyui():
 
     except Exception as e:
         return jsonify({'success': False, 'error': f'测试失败: {str(e)}'}), 500
+
+
+@app.route('/api/auto-select-topics', methods=['POST'])
+def auto_select_topics():
+    """自动选择文章主体 - 使用通义千问获取今日热点话题"""
+    try:
+        data = request.json
+        count = 5;  # 默认返回5个话题
+
+        config = load_config()
+        api_key = config.get('aliyun_api_key', '')
+        base_url = config.get('aliyun_base_url', 'https://dashscope.aliyuncs.com')
+
+        if not api_key:
+            return jsonify({'success': False, 'error': '请先配置阿里云 API Key'}), 400
+
+        url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+
+        model_name = config.get('default_model', 'qwen-plus-2025-09-11')  # Use configured default model
+        payload = {
+            "model": "qwen3-max-2025-09-23",
+            "input": {
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a helpful assistant，you will total follow the user instruct and insure 100 percent complete the work"
+                    },
+                    {
+                        "role": "user",
+                        "content": f"你是一个新闻热点与内容创作专家。任务：实时联网检索今日（检索时间：{datetime.now().strftime('%Y-%m-%d')}）网络热点，优先来源包括微博热搜、知乎、今日头条、百度热搜、抖音热榜及主流媒体要闻。目标：从今日热点中筛选出{count}个最有可能引发大量讨论、且观点冲突明显的主题，并为每个主题给出可直接用于撰写“咪蒙风格”观点文章的选题包，同时要检索相关主题的关联图片数据，*要求图片数据是可直接访问的URL，若URL不可访问则不要提供。\\r\\n\\r\\n 输出要求（每个主题控制在10–30字）：\\r\\n\\r\\n一句话标题（吸引眼球），对应的key是 topic；\\r\\n关联的可访问图片地址，若无图片不处理，对应的key是 picList；\\r\\n约束与注意事项：\\r\\n\\r\\n严格保证输出的争议话题是{count}条，不得出现条数不够的情况。所有话题必须是真实的热点话题，不得捏造话题数据，所有事实类断言必须标注来源或注明“来源/检索时间/话题地址”，不得捏造事实或散布未经证实传言。\\r\\n避免人身攻击、仇恨言论、违法教唆和详细违法手段。遇敏感话题请给出安全且合法的替代切入角度。\\r\\n 如果某主题风险过高（例如涉及未成年人性内容、重大个人隐私、正在调查的刑事案件），请过滤掉。\\r\\n 只有当你确认图片确实是可访问且与当前主题一致时，才输出到picList属性中，否则不处理。\\r\\n严格保证输出的争议话题是{count}条，不得出现条数不够的情况。\\r\\n如果你理解并准备开始，请输出“开始检索并列出Top{count}今日争议话题”，并在每个主题上按上述格式以JSON格式数据提供，使用对应的key维护。",
+                    }
+                ]
+            },
+            "parameters": {
+                "enable_search": True,
+                "search_options": {
+                    "forced_search": True
+                }
+            }
+        }
+
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+
+        print(f"✓ 请求主体获取: {payload}")
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response.raise_for_status()
+        result = response.json()
+        print(f"✓ 请求主体返回: {result}")
+
+        # 从新API响应格式中提取文本内容
+        raw_text = None
+
+        # 尝试新格式：'choices' array with message.content
+        if 'output' in result and 'choices' in result['output'] and len(result['output']['choices']) > 0:
+            choice = result['output']['choices'][0]
+            if 'message' in choice and 'content' in choice['message']:
+                raw_text = choice['message']['content']
+
+        # 如果新格式不存在，尝试旧格式
+        if not raw_text and 'output' in result and 'text' in result['output']:
+            raw_text = result['output']['text']
+
+        if not raw_text:
+            return jsonify({'success': False, 'error': '无法从API响应中获取内容'}), 500
+
+        # 从返回内容中提取JSON数据，可能有代码块标记
+        extracted_text = raw_text
+
+        # 检查是否包含 ```json 代码块
+        json_match = re.search(r'```json\s*\n?(\[.*?\])\n?\s*```', raw_text, re.DOTALL)
+        if not json_match:
+            # 尝试普通代码块
+            json_match = re.search(r'```\s*\n?(\[.*?\])\n?\s*```', raw_text, re.DOTALL)
+
+        if json_match:
+            extracted_text = json_match.group(1)
+
+        # 新的逻辑：尝试解析AI返回的JSON数据
+        json_objects = []
+
+        # 首先尝试解析整个提取的文本作为JSON数组
+        try:
+            parsed = json.loads(extracted_text.strip())
+            if isinstance(parsed, list):
+                # 筛选只包含 topic 字段的对象
+                json_objects = [obj for obj in parsed if isinstance(obj, dict) and 'topic' in obj]
+            elif isinstance(parsed, dict) and 'topic' in parsed:
+                # 单个JSON对象
+                json_objects = [parsed]
+        except json.JSONDecodeError:
+            # 如果直接解析JSON失败，尝试使用之前的 brace matching 方法
+            text = extracted_text
+            start = 0
+            while start < len(text):
+                # 查找下一个 '{' 字符
+                brace_start = text.find('{', start)
+                if brace_start == -1:
+                    break
+
+                # 从该位置开始找到匹配的 '}'
+                brace_count = 0
+                for i in range(brace_start, len(text)):
+                    if text[i] == '{':
+                        brace_count += 1
+                    elif text[i] == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            json_str = text[brace_start:i+1]
+                            try:
+                                parsed = json.loads(json_str)
+                                # 验证这是正确的主题对象格式，必须有topic字段
+                                if isinstance(parsed, dict) and 'topic' in parsed:
+                                    json_objects.append(parsed)
+                            except json.JSONDecodeError:
+                                # 如果解析失败，跳过本次循环
+                                pass
+                            break
+                start = brace_start + 1
+
+        # 如果仍无法解析，尝试查找数组格式（备用方法）
+        if not json_objects:
+            json_match = re.search(r'\[.*\]', raw_text, re.S)
+            if json_match:
+                try:
+                    json_str = json_match.group()
+                    topics_data = json.loads(json_str)
+                    if isinstance(topics_data, list):
+                        # 筛选包含 topic 的对象
+                        json_objects = [obj for obj in topics_data if isinstance(obj, dict) and 'topic' in obj]
+                    elif isinstance(topics_data, dict) and 'topic' in topics_data:
+                        json_objects = [topics_data]
+                except json.JSONDecodeError:
+                    pass
+
+        # 如果成功解析到JSON对象，返回它们
+        if json_objects:
+            return jsonify({
+                'success': True,
+                'topics': json_objects
+            })
+
+        return jsonify({
+            'success': False,
+            'error': '无法解析API返回的数据',
+            'raw_response': raw_text
+        }), 500
+
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'error': '请求超时，请稍后重试'}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'error': f'API请求失败: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'自动选题失败: {str(e)}'}), 500
 
 
 @app.route('/api/check-pandoc', methods=['GET'])

@@ -371,8 +371,6 @@ def test_comfyui():
 def auto_select_topics():
     """自动选择文章主体 - 使用通义千问获取今日热点话题"""
     try:
-        data = request.json
-        count = 5;  # 默认返回5个话题
 
         config = load_config()
         api_key = config.get('aliyun_api_key', '')
@@ -383,9 +381,12 @@ def auto_select_topics():
 
         url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
 
-        model_name = config.get('default_model', 'qwen-plus-2025-09-11')  # Use configured default model
+        model_name = config.get('topic_model', 'qwen3-max-2025-09-23')  # Use configured default model
+        topic_prompt = config.get('topic_prompt','');
+        time = datetime.now().strftime('%Y-%m-%d');
+        topic_prompt = topic_prompt.replace('{days}',time);
         payload = {
-            "model": "qwen3-max-2025-09-23",
+            "model": model_name,
             "input": {
                 "messages": [
                     {
@@ -394,7 +395,8 @@ def auto_select_topics():
                     },
                     {
                         "role": "user",
-                        "content": f"你是一个新闻热点与内容创作专家。任务：实时联网检索今日（检索时间：{datetime.now().strftime('%Y-%m-%d')}）网络热点，优先来源包括微博热搜、知乎、今日头条、百度热搜、抖音热榜及主流媒体要闻。目标：从今日热点中筛选出{count}个最有可能引发大量讨论、且观点冲突明显的主题，并为每个主题给出可直接用于撰写“咪蒙风格”观点文章的选题包，同时要检索相关主题的关联图片数据，*要求图片数据是可直接访问的URL，若URL不可访问则不要提供。\\r\\n\\r\\n 输出要求（每个主题控制在10–30字）：\\r\\n\\r\\n一句话标题（吸引眼球），对应的key是 topic；\\r\\n关联的可访问图片地址，若无图片不处理，对应的key是 picList；\\r\\n约束与注意事项：\\r\\n\\r\\n严格保证输出的争议话题是{count}条，不得出现条数不够的情况。所有话题必须是真实的热点话题，不得捏造话题数据，所有事实类断言必须标注来源或注明“来源/检索时间/话题地址”，不得捏造事实或散布未经证实传言。\\r\\n避免人身攻击、仇恨言论、违法教唆和详细违法手段。遇敏感话题请给出安全且合法的替代切入角度。\\r\\n 如果某主题风险过高（例如涉及未成年人性内容、重大个人隐私、正在调查的刑事案件），请过滤掉。\\r\\n 只有当你确认图片确实是可访问且与当前主题一致时，才输出到picList属性中，否则不处理。\\r\\n严格保证输出的争议话题是{count}条，不得出现条数不够的情况。\\r\\n如果你理解并准备开始，请输出“开始检索并列出Top{count}今日争议话题”，并在每个主题上按上述格式以JSON格式数据提供，使用对应的key维护。",
+                        # "content": f"你是一个新闻热点与内容创作专家。任务：实时联网检索今日（检索时间：{days}）网络热点，优先来源包括微博热搜、知乎、今日头条、百度热搜、抖音热榜及主流媒体要闻。目标：从今日热点中筛选出{count}个最有可能引发大量讨论、且观点冲突明显的主题，并为每个主题给出可直接用于撰写“咪蒙风格”观点文章的选题包，同时要检索相关主题的关联图片数据，*要求图片数据是可直接访问的URL，若URL不可访问则不要提供。\\r\\n\\r\\n 输出要求（每个主题控制在10–30字）：\\r\\n\\r\\n一句话标题（吸引眼球），对应的key是 topic；\\r\\n关联的可访问图片地址，若无图片不处理，对应的key是 picList；\\r\\n约束与注意事项：\\r\\n\\r\\n严格保证输出的争议话题是{count}条，不得出现条数不够的情况。所有话题必须是真实的热点话题，不得捏造话题数据，所有事实类断言必须标注来源或注明“来源/检索时间/话题地址”，不得捏造事实或散布未经证实传言。\\r\\n避免人身攻击、仇恨言论、违法教唆和详细违法手段。遇敏感话题请给出安全且合法的替代切入角度。\\r\\n 如果某主题风险过高（例如涉及未成年人性内容、重大个人隐私、正在调查的刑事案件），请过滤掉。\\r\\n 只有当你确认图片确实是可访问且与当前主题一致时，才输出到picList属性中，否则不处理。\\r\\n严格保证输出的争议话题是{count}条，不得出现条数不够的情况。\\r\\n如果你理解并准备开始，请输出“开始检索并列出Top{count}今日争议话题”，并在每个主题上按上述格式以JSON格式数据提供，使用对应的key维护。",
+                        "content": topic_prompt
                     }
                 ]
             },
@@ -644,6 +646,8 @@ def handle_config():
             'pandoc_path': config.get('pandoc_path', ''),
             'default_model': config.get('default_model', 'qwen-plus'),
             'default_prompt': config.get('default_prompt', ''),
+            'topic_prompt':config.get('topic_prompt',''),
+            'topic_model':config.get('topic_model'),
             'max_concurrent_tasks': config.get('max_concurrent_tasks', 3),
             'image_source_priority': config.get('image_source_priority', ['comfyui', 'user_uploaded', 'pexels', 'unsplash', 'pixabay', 'local']),
             'local_image_directories': config.get('local_image_directories', [{'path': 'pic', 'tags': ['default']}]),
@@ -672,6 +676,8 @@ def handle_config():
             'pandoc_path': new_config.get('pandoc_path', ''),
             'default_model': new_config.get('default_model', 'qwen-plus'),
             'default_prompt': new_config.get('default_prompt', ''),
+            'topic_prompt':new_config.get('topic_prompt',''),
+            'topic_model':new_config.get('topic_model',''),
             'max_concurrent_tasks': int(new_config.get('max_concurrent_tasks', old_config.get('max_concurrent_tasks', 3))),
             'image_source_priority': new_config.get('image_source_priority', old_config.get('image_source_priority', ['comfyui', 'user_uploaded', 'pexels', 'unsplash', 'pixabay', 'local'])),
             'local_image_directories': new_config.get('local_image_directories', old_config.get('local_image_directories', [{'path': 'pic', 'tags': ['default']}])) ,
@@ -731,19 +737,14 @@ def handle_config():
 @app.route('/api/models')
 def get_qwen_models():
     """获取可用的阿里云 Qwen 模型列表"""
-    config = load_config()
-    api_key = config.get('aliyun_api_key', '')
-    base_url = config.get('aliyun_base_url', 'https://dashscope.aliyuncs.com')
-
-    if not api_key:
-        return jsonify({'error': '请先配置阿里云 API Key'}), 400
-
     try:
-        # 阿里云 Qwen 不提供动态模型列表API，返回预定义的模型列表
-        model_list = [
-            {'name': 'qwen-plus-2025-09-11', 'display_name': 'Qwen-Plus-2025-09-11'}
-        ]
+        # 从指定URL获取模型列表
+        response = requests.get('https://raw.githubusercontent.com/littlecold-Github/zhangfei-eat-douya/refs/heads/qianwen/model.json', timeout=10)
+        response.raise_for_status()
+        model_list = response.json()
         return jsonify({'models': model_list})
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'从远程获取模型列表失败: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'获取模型列表失败: {str(e)}'}), 500
 
@@ -2416,7 +2417,7 @@ def generate_image_with_comfyui(topic, prompts, blueprint, config, settings_over
     finally:
         semaphore.release()
 
-def find_available_port(start_port=5000, max_attempts=10):
+def find_available_port(start_port=5050, max_attempts=10):
     """查找可用端口，从start_port开始尝试"""
     import socket
     for port in range(start_port, start_port + max_attempts):
@@ -2437,13 +2438,13 @@ if __name__ == '__main__':
     import os
     if os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
         # 这是主进程，查找可用端口
-        port = find_available_port(5000)
+        port = find_available_port(5050)
         if port is None:
             print("错误: 无法找到可用端口 (5000-5009 都被占用)")
             exit(1)
 
-        if port != 5000:
-            print(f"提示: 端口 5000 被占用，使用端口 {port} 启动服务")
+        if port != 5050:
+            print(f"提示: 端口 5050 被占用，使用端口 {port} 启动服务")
 
         print(f"应用启动在 http://localhost:{port}")
         # 将端口保存到环境变量，供重载器进程使用

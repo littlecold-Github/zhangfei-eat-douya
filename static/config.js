@@ -13,6 +13,8 @@ const pixabayTestResult = document.getElementById('pixabayTestResult');
 const pandocPath = document.getElementById('pandocPath');
 const outputDirectory = document.getElementById('outputDirectory');
 const defaultModel = document.getElementById('defaultModel');
+const topicModel = document.getElementById('topicModel');
+const topicPrompt = document.getElementById('topicPrompt');
 const defaultPrompt = document.getElementById('defaultPrompt');
 const maxConcurrentTasks = document.getElementById('maxConcurrentTasks');
 const saveConfigBtn = document.getElementById('saveConfig');
@@ -100,6 +102,9 @@ async function loadConfig() {
             if (config.default_prompt) {
                 defaultPrompt.value = config.default_prompt;
             }
+            if (config.topic_prompt) {
+                topicPrompt.value = config.topic_prompt;
+            }
             if (config.max_concurrent_tasks) {
                 maxConcurrentTasks.value = config.max_concurrent_tasks;
             }
@@ -153,6 +158,9 @@ async function loadConfig() {
             if (config.default_model) {
                 defaultModel.value = config.default_model;
             }
+            if (config.topic_model) {
+                topicModel.value = config.topic_model;
+            }
         }
     } catch (error) {
         console.error('加载配置失败:', error);
@@ -181,6 +189,7 @@ async function loadModels() {
         console.error('加载模型列表失败:', error);
     }
 }
+
 
 // 加载摘要模型列表（复用主模型列表，并添加特殊选项）
 async function loadSummaryModels() {
@@ -251,6 +260,8 @@ saveConfigBtn.addEventListener('click', async () => {
         output_directory: outputDirectory.value || 'output',
         default_model: defaultModel.value,
         default_prompt: defaultPrompt.value,
+        topic_model: topicModel.value,
+        topic_prompt: topicPrompt.value,
         max_concurrent_tasks: maxConcurrentTasks.value || 3,
         comfyui_settings: collectComfyuiSettings(),
         comfyui_image_count: parseInt(comfyuiImageCount?.value || 1),
@@ -378,6 +389,7 @@ resetConfigBtn.addEventListener('click', () => {
         outputDirectory.value = 'output';
         defaultModel.value = 'qwen-plus';
         defaultPrompt.value = '';
+        topicPrompt.value = '';
         maxConcurrentTasks.value = 3;
         applyComfyuiSettings(comfyuiDefaults);
         if (comfyuiImageCount) comfyuiImageCount.value = 1;

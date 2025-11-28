@@ -27,8 +27,17 @@
                 <option value="qwen-plus-2025-09-11">qwen-plus-2025-09-11</option>
                 <option value="qwen-max">qwen-max</option>
                 <option value="qwen3-max">qwen3-max</option>
-                <option value="qwen-turbo">qwen-turbo</option>
-                <option value="qwen-long">qwen-long</option>
+            </select>
+            <button id="testDefaultModel" class="btn btn-secondary btn-small" type="button">测试主模型</button>
+            <div id="defaultModelTestResult" class="test-result" style="display: none;"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="topicModel">主题选择默认模型:</label>
+            <select id="topicModel">
+                <option value="qwen-plus-2025-09-11">qwen-plus-2025-09-11</option>
+                <option value="qwen-max">qwen-max</option>
+                <option value="qwen3-max">qwen3-max</option>
             </select>
             <button id="testDefaultModel" class="btn btn-secondary btn-small" type="button">测试主模型</button>
             <div id="defaultModelTestResult" class="test-result" style="display: none;"></div>
@@ -183,6 +192,15 @@
             <label for="defaultPrompt">默认写作提示词:</label>
             <textarea id="defaultPrompt" rows="10" placeholder="设置默认的写作提示词"></textarea>
             <p class="help-text">使用 {topic} 作为标题的占位符。留空使用系统默认提示词。</p>
+        </div>
+    </div>
+
+        <div class="config-section">
+        <h2>Topic检索提示词</h2>
+        <div class="form-group">
+            <label for="topicPrompt">默认写作提示词:</label>
+            <textarea id="topicPrompt" rows="10" placeholder="设置主题检索提示词"></textarea>
+            <p class="help-text">使用 {days} 作为日期的占位符。自动选题时必须填写。</p>
         </div>
     </div>
 

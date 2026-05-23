@@ -4,5 +4,5 @@
   {"name": "qwen3-max", "display_name": "qwen3-max"},
   {"name": "qwen3-max-2025-09-23", "display_name": "qwen3-max-2025-09-23"},
   {"name": "qwen3.5-plus", "display_name": "qwen3.5-plus"},
-  {"name": "qwen-flash", "display_name": "qwen-flash"}
+  {"name": "qwen3.7-max", "display_name": "qwen3.7-max"}
 ]

@@ -84,7 +84,7 @@ VISUAL_TEMPLATE_PRESETS = {
 }
 
 # 通义千问API配置
-DASHSCOPE_URL = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation"
+DASHSCOPE_URL = "https://dashscope.aliyuncs.com/api/v1"
 IMAGE_STYLE_TEMPLATES = {
     'custom': {
         'label': '自定义风格',
@@ -379,7 +379,7 @@ def auto_select_topics():
         if not api_key:
             return jsonify({'success': False, 'error': '请先配置阿里云 API Key'}), 400
 
-        url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+        url = f'{base_url}'
 
         model_name = config.get('topic_model', 'qwen3-max-2025-09-23')  # Use configured default model
         topic_prompt = config.get('topic_prompt','');
@@ -770,7 +770,7 @@ def test_qwen_model():
         # 使用简单的测试提示词
         test_prompt = "请用一句话介绍你自己。"
 
-        url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+        url = f'{base_url}'
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
@@ -1341,7 +1341,7 @@ def generate_article_with_qwen(topic, api_key, base_url, model_name, custom_prom
 请直接开始写文章，不需要额外的说明。"""
 
     # 使用 HTTP 请求调用阿里云 Qwen API
-    url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+    url = f'{base_url}'
     search = True;
     headers = {
         'Authorization': f'Bearer {api_key}',
@@ -1824,7 +1824,7 @@ def generate_visual_blueprint_qwen(topic, article, api_key, base_url, model_name
 4. 只输出 JSON，禁止添加额外解释或 Markdown。
 """
 
-    url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+    url = f'{base_url}'
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json',
@@ -2087,7 +2087,7 @@ def summarize_paragraph_for_image(paragraph_text, topic, config):
 视觉描述："""
 
     try:
-        url = f'{base_url}/api/v1/services/aigc/text-generation/generation'
+        url = f'{base_url}'
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
